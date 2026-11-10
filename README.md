@@ -69,5 +69,5 @@ Objects fetched by this skill come from [Poly Haven](https://polyhaven.com) and 
 Tested on one PC: Revit 2026, pyRevit 7.
 
 - Poly Haven route: nine different objects, eighteen placements, 8.6 MB downloaded, then corrected for rotation and height.
-- Reference lookup: family search and preview sheet run in Revit.
-- Family-folder route (`load`, `place`): written, not yet run in Revit.
+- Reference lookup: run on a single-object description and on a photo of a furnished living room (ten objects searched, 50 previews compared).
+- Family-folder route: indexed, loaded and placed a manufacturer family from BIMobject in a dry run; it came in at its stated size.

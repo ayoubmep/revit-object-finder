@@ -40,6 +40,14 @@ When the user gives a picture, a product name or a description, find the closest
    - *none*: say so and say what is missing. Do not place a poor substitute without asking.
 5. **Place it**, then check it as below.
 
+When the reference is a whole room, not one object:
+
+- **Split it first** into loose objects (sofa, tables, lamps, vases, art, rug) and architecture (wall panels, stone slabs, light strips, curtains). Architecture is modelled, not searched.
+- **Judge free objects on shape and size, not on colour or material.** They arrive in plain colours and you assign the appearance afterwards, so a light-wood shelf can become dark bronze. A wrong silhouette cannot be fixed.
+- **Model the simple pieces yourself.** A rug, a flat TV, a picture frame or a slab-and-frame table is a few boxes with the right materials and will match the reference better than a near miss from a catalogue.
+- **Expect gaps on the hero pieces.** The free catalogue is mostly vintage; a designer sofa, chandelier or floor lamp usually has no match. Say so, and tell the user what to look for as a Revit family (type, shape, width) so they can download it into the library folder.
+- Give the user one table: object, best match, verdict, what you will do.
+
 ## Route 1: fetch one object at a time (Poly Haven)
 
 Poly Haven publishes CC0 models and a public API meant for tools. Only the objects you place are downloaded, a few hundred KB each, into `C:\BIM-Library\polyhaven`.
@@ -129,7 +137,7 @@ result = bim_library.place(doc, [
 Units are metres and degrees. Every placed item comes back with its real `size_m`, `min_m` and `max_m`. Use them:
 
 - **Size:** compare with the room. A 3.4 m sofa in a 3 m bay is wrong however good it looks.
-- **Insertion point:** families are not all drawn around their centre. If `min_m`/`max_m` are not centred on your point, shift by the difference and place again.
+- **Insertion point:** families are not all drawn around their centre. If `min_m`/`max_m` are not centred on your point, shift by the difference and place again. A manufacturer's corner bench, for example, was inserted by its corner: its box ran from the point to +1.486 m in x and -1.486 m in y.
 - **Front:** you cannot know which way a family faces before placing it. Place once, look at it with a capture from above and from eye level, then correct `rotation`. Seats face the view or the table; beds have the head against a wall; nothing blocks a door swing.
 - **Clearances:** keep 0.9 m walkways, 0.6 m around a bed, 0.75 m behind a dining chair.
 
@@ -141,7 +149,7 @@ Units are metres and degrees. Every placed item comes back with its real `size_m
 result = bim_library.materials(doc, "Corbu Sofa")
 ```
 
-Family materials often have no render appearance. For rendering, give them one with `appearances.apply`; leather, fabric, wood and metal assets exist in the Autodesk library that ships with Revit.
+The list can come back empty for a family built from nested components; read the materials from the nested instances, or from the Materials list by the manufacturer's prefix. Family materials often have no render appearance. For rendering, give them one with `appearances.apply`; leather, fabric, wood and metal assets exist in the Autodesk library that ships with Revit.
 
 ## What this is not for
 
