@@ -107,6 +107,29 @@ result = polyhaven.add(doc, [
 - **Check after the first placement.** Read each instance's bounding box and look at a capture from above. Two things you cannot know in advance: which way a long object runs (a coffee table may need 90 degrees to sit parallel to the sofa), and where its origin is (a pendant lamp's origin was 0.22 m below its lowest point, so it poked through the ceiling until `z` was lowered). Correct, `clear`, and place again; the objects are already built, so the second pass is quick.
 - `polyhaven.clear(doc)` removes every placed object so a layout can be redone.
 
+### Plants, trees and garden pieces
+
+Check how a plant's leaves are made before you fetch it. Open its `.gltf` and read each material's `alphaMode`:
+
+- `OPAQUE`: the leaves are modelled. It works.
+- `MASK` or `BLEND`: the leaves are flat cards cut out by a transparent texture. Revit drops the texture and you get rectangles. Skip it.
+
+Garden-size trees in the catalogue are millions of triangles, so make trees from small plants that have modelled leaves:
+
+```python
+result = polyhaven.add(doc, [
+    {"asset": "quiver_tree_02", "x": -8.5, "y": -1.8, "level": u"Niveau 1",
+     "scale": 3.2, "split_z": 0.5, "max_triangles": 70000, "category": "plant"},
+])
+```
+
+- `scale` enlarges the object when it is built. A 1.5 m aloe tree at 3.2 becomes a 4.8 m garden tree with real leaves.
+- `split_z` gives everything above that fraction of the height its own material (`PH - <part>_top`), for a plant whose trunk and crown share one material.
+- Several catalogue plants are a row of specimens in one object. Use the row as a planting bed or a line of young trees along a wall.
+- Every placed object reports its `min_m` and `max_m`; a scaled row can be 17 m long, so read them.
+
+Rocks, a fire pit, a gate, a statue or a bust are solid objects and come through well. Model the rest (cypresses, clipped shrubs, lavender, lamps) with turned shapes.
+
 Know the limits and say them to the user:
 
 - These are **geometry, not parametric families**: no types, no manufacturer data. They sit in the Furniture, Lighting or Planting category and carry the comment "Poly Haven: <id> (CC0)".

@@ -28,7 +28,7 @@ No library has to be downloaded first. This project is not affiliated with Autod
 Two limits to know before you rely on it:
 
 - **Revit cannot keep a mesh's texture mapping.** Objects arrive in plain colours. The skill can then give each part a real render appearance (leather, wood, fabric, a glowing lamp globe) from the Autodesk material library that ships with Revit.
-- **Garden trees do not work.** Free tree models are millions of triangles or rely on transparent leaf textures. Use your renderer's own trees. Small potted plants with modelled leaves are fine.
+- **Trees need a trick.** Free garden-size trees are millions of triangles or rely on transparent leaf textures, which Revit cannot keep. The skill instead takes a small plant with modelled leaves and enlarges it: a 1.5 m aloe tree becomes a 4.8 m garden tree. It checks each plant first and skips the ones that would come out as flat cards. Your renderer's own trees are still better.
 
 The Poly Haven catalogue is small and mixed in style: about 85 furniture pieces, many of them vintage. Claude will say when nothing fits rather than place a poor match.
 
@@ -60,6 +60,7 @@ The skill never downloads Revit families for you. Put files you are allowed to u
 | `scripts/polyhaven.py` | Search the catalogue, tile previews, fetch one object, build it in Revit, place it. |
 | `scripts/bim_library.py` | Search, load and place Revit families from the project and a folder; report each placed object's real size. |
 | `scripts/shapes.py` | Model a missing piece with rounded, soft, turned and tilted forms instead of boxes. |
+| `scripts/garden.py` | Turned forms for the garden and street: cypresses, garden lights, a parasol, stools, street lamps. |
 | `scripts/appearances.py` | Give materials a render appearance from the Autodesk library, recolour one, or put an image on a surface. |
 
 ## Credit
@@ -73,4 +74,5 @@ Tested on one PC: Revit 2026, pyRevit 7.
 - Poly Haven route: nine different objects, eighteen placements, 8.6 MB downloaded, then corrected for rotation and height.
 - Reference lookup: run on a single-object description and on a photo of a furnished living room (ten objects searched, 50 previews compared).
 - Family-folder route: indexed, loaded and placed a manufacturer family from BIMobject in a dry run; it came in at its stated size.
+- Garden: three enlarged aloe trees, two rows of young trees, rock groups, a fire pit, an iron gate and two sculptures fetched and placed (25 objects in all, about 24 MB).
 - Modelling from a photo: a living room rebuilt from a reference picture with the shapes module (sofas, cushions, ribbed wall, marble and brass table, leaf chandelier, turned floor lamp).

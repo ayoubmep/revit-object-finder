@@ -323,8 +323,40 @@ def _find_type(doc, name):
     return None
 
 
-def _build_type(doc, asset_id, folder, category, max_triangles):
+def _type_name(asset_id, scale=1.0, split_z=None):
     name = PREFIX + asset_id
+    if abs(scale - 1.0) > 1e-6:
+        name += u" x%.2f" % scale
+    if split_z:
+        name += u" split"
+    return name
+
+
+def _mesh(part_points, triangles, mat, scale):
+    """One built mesh. A mesh carries a single material, so every part, and every
+    half of a split part, is built on its own."""
+    builder = DB.TessellatedShapeBuilder()
+    builder.OpenConnectedFaceSet(False)
+    pts = [DB.XYZ(p[0] * scale * M, p[1] * scale * M, p[2] * scale * M) for p in part_points]
+    used = 0
+    for a, b, c in triangles:
+        corners = List[DB.XYZ]()
+        corners.Add(pts[a])
+        corners.Add(pts[b])
+        corners.Add(pts[c])
+        face = DB.TessellatedFace(corners, mat.Id)
+        if builder.DoesFaceHaveEnoughLoopsAndVertices(face):
+            builder.AddFace(face)
+            used += 1
+    builder.CloseConnectedFaceSet()
+    builder.Target = DB.TessellatedShapeBuilderTarget.Mesh
+    builder.Fallback = DB.TessellatedShapeBuilderFallback.Salvage
+    builder.Build()
+    return list(builder.GetBuildResult().GetGeometricalObjects()), used
+
+
+def _build_type(doc, asset_id, folder, category, max_triangles, scale=1.0, split_z=None):
+    name = _type_name(asset_id, scale, split_z)
     existing = _find_type(doc, name)
     if existing is not None:
         return existing, None
@@ -332,45 +364,40 @@ def _build_type(doc, asset_id, folder, category, max_triangles):
     used = 0
     lo = [1e9, 1e9, 1e9]
     hi = [-1e9, -1e9, -1e9]
+    for part in parts:
+        for p in part["points"]:
+            for i in range(3):
+                lo[i] = min(lo[i], p[i])
+                hi[i] = max(hi[i], p[i])
+    cut = lo[2] + split_z * (hi[2] - lo[2]) if split_z else None
     materials = []
     geometry = List[DB.GeometryObject]()
     for part in parts:
         if not part["triangles"]:
             continue
-        mat = _material(doc, PREFIX + part["material"], part["texture"])
-        materials.append(mat.Name)
-        # one builder per part: a built mesh carries a single material, so parts built
-        # together all take the first part's material (leaves came out pot-coloured)
-        builder = DB.TessellatedShapeBuilder()
-        builder.OpenConnectedFaceSet(False)
-        pts = [DB.XYZ(p[0] * M, p[1] * M, p[2] * M) for p in part["points"]]
-        for p in part["points"]:
-            for i in range(3):
-                lo[i] = min(lo[i], p[i])
-                hi[i] = max(hi[i], p[i])
-        for a, b, c in part["triangles"]:
-            corners = List[DB.XYZ]()
-            corners.Add(pts[a])
-            corners.Add(pts[b])
-            corners.Add(pts[c])
-            face = DB.TessellatedFace(corners, mat.Id)
-            if builder.DoesFaceHaveEnoughLoopsAndVertices(face):
-                builder.AddFace(face)
-                used += 1
-        builder.CloseConnectedFaceSet()
-        builder.Target = DB.TessellatedShapeBuilderTarget.Mesh
-        builder.Fallback = DB.TessellatedShapeBuilderFallback.Salvage
-        builder.Build()
-        for built in builder.GetBuildResult().GetGeometricalObjects():
-            geometry.Add(built)
+        groups = [(PREFIX + part["material"], part["triangles"])]
+        if cut is not None:
+            pts = part["points"]
+            low = [t for t in part["triangles"] if (pts[t[0]][2] + pts[t[1]][2] + pts[t[2]][2]) / 3.0 <= cut]
+            high = [t for t in part["triangles"] if (pts[t[0]][2] + pts[t[1]][2] + pts[t[2]][2]) / 3.0 > cut]
+            groups = [(PREFIX + part["material"], low), (PREFIX + part["material"] + u"_top", high)]
+        for mat_name, triangles in groups:
+            if not triangles:
+                continue
+            mat = _material(doc, mat_name, part["texture"])
+            materials.append(mat.Name)
+            built, n = _mesh(part["points"], triangles, mat, scale)
+            used += n
+            for g in built:
+                geometry.Add(g)
     cat_id = DB.ElementId(category)
     if not DB.DirectShape.IsValidCategoryId(cat_id, doc):
         cat_id = DB.ElementId(DB.BuiltInCategory.OST_GenericModel)
     shape_type = DB.DirectShapeType.Create(doc, name, cat_id)
     shape_type.SetShape(geometry)
     DB.DirectShapeLibrary.GetDirectShapeLibrary(doc).AddDefinitionType(name, shape_type.Id)
-    info = {"triangles": used, "size_m": [round(hi[i] - lo[i], 3) for i in range(3)],
-            "base_z_m": round(lo[2], 3), "materials": sorted(set(materials))}
+    info = {"triangles": used, "size_m": [round((hi[i] - lo[i]) * scale, 3) for i in range(3)],
+            "base_z_m": round(lo[2] * scale, 3), "materials": sorted(set(materials))}
     return shape_type, info
 
 
@@ -378,7 +405,10 @@ def add(doc, items, folder=DEFAULT_FOLDER, max_triangles=MAX_TRIANGLES):
     """Downloads what is missing, then places every item.
 
     Item: asset, x, y, level, and optionally rotation (degrees), z (metres above the
-    level), category ("furniture", "lighting", "plant", "generic").
+    level), category ("furniture", "lighting", "plant", "generic"), scale (a real plant
+    enlarged three times makes a tree), split_z (0 to 1: give the part above that
+    fraction of the height its own material, for a trunk and a crown that share one),
+    max_triangles.
     At rotation 0 an object's front faces south (-Y).
     """
     downloads = []
@@ -397,7 +427,8 @@ def add(doc, items, folder=DEFAULT_FOLDER, max_triangles=MAX_TRIANGLES):
         for item in items:
             asset_id = item["asset"]
             category = CATEGORIES.get(item.get("category", "furniture"), DB.BuiltInCategory.OST_Furniture)
-            shape_type, info = _build_type(doc, asset_id, folder, category, max_triangles)
+            shape_type, info = _build_type(doc, asset_id, folder, category, item.get("max_triangles", max_triangles),
+                                           item.get("scale", 1.0), item.get("split_z"))
             if info is not None:
                 built[asset_id] = info
             level = levels.get(item["level"])
@@ -407,12 +438,18 @@ def add(doc, items, folder=DEFAULT_FOLDER, max_triangles=MAX_TRIANGLES):
             tf = DB.Transform.CreateRotation(DB.XYZ.BasisZ, angle)
             tf.Origin = DB.XYZ(item["x"] * M, item["y"] * M, level.Elevation + item.get("z", 0.0) * M)
             inst = DB.DirectShape.CreateElementInstance(doc, shape_type.Id, shape_type.Category.Id,
-                                                        PREFIX + asset_id, tf)
+                                                        _type_name(asset_id, item.get("scale", 1.0), item.get("split_z")), tf)
             c = inst.get_Parameter(DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)
             if c and not c.IsReadOnly:
                 c.Set(u"Poly Haven: %s (CC0)" % asset_id)
-            report.append({"asset": asset_id, "id": inst.Id.Value, "x": item["x"], "y": item["y"],
-                           "rotation": item.get("rotation", 0.0)})
+            row = {"asset": asset_id, "id": inst.Id.Value, "x": item["x"], "y": item["y"],
+                   "rotation": item.get("rotation", 0.0)}
+            doc.Regenerate()
+            bb = inst.get_BoundingBox(None)
+            if bb is not None:
+                row["min_m"] = [round(bb.Min.X / M, 2), round(bb.Min.Y / M, 2), round(bb.Min.Z / M, 2)]
+                row["max_m"] = [round(bb.Max.X / M, 2), round(bb.Max.Y / M, 2), round(bb.Max.Z / M, 2)]
+            report.append(row)
         t.Commit()
     except Exception:
         if t.HasStarted() and not t.HasEnded():

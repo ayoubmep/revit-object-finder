@@ -47,6 +47,8 @@ VILLA = {
     u"Demo - Marbre": u"ACADGen-084",            # Flooring.Marble.White
     u"Demo - Tapis": u"ACADGen-188",             # Fabrics.Linen.Beige (the tweed renders near black)
     u"Demo - Laiton": u"Metal-013",              # Metal schema, brass
+    u"Demo - Asphalte": u"ACADGen-321",          # Paving - Surfacing.Asphalt
+    u"Demo - Lavande": (u"Paint-056", {"wallpaint_color": (125, 108, 165)}),
     u"Demo - Cannelures": (u"Paint-056", {"wallpaint_color": (206, 199, 189)}),
     # upholstery in flat colours: the linen textures render almost white
     u"Demo - Tissu sofa": (u"Paint-056", {"wallpaint_color": (190, 181, 170)}),
@@ -85,6 +87,22 @@ VILLA_OBJECTS = {
     u"PH - modern_ceiling_globe": (u"Generic-022", {"generic_diffuse": (255, 240, 215),
                                                     "generic_self_illum_luminance": 2500.0,
                                                     "generic_self_illum_color_temperature": 3000.0}),
+}
+
+# Appearances for the fetched garden objects (villa_build.GARDEN_OBJECTS).
+GARDEN_OBJECTS = {
+    u"PH - quiver_tree_02": (u"Paint-056", {"wallpaint_color": (150, 128, 100)}),   # trunk
+    u"PH - quiver_tree_02_top": u"Generic-023",                                      # crown: leaf texture
+    u"PH - pachira_aquatica_01_leaves": u"Generic-023",
+    u"PH - pachira_aquatica_01_bark": u"ACADGen-395",
+    u"PH - flower_gazania": u"Generic-023",
+    u"PH - rock_moss_set_01": u"ACADGen-003",        # exposed aggregate: a grainy stone
+    u"PH - rock_moss_set_02": u"ACADGen-003",
+    u"PH - namaqualand_boulder_04": u"ACADGen-003",
+    u"PH - stone_fire_pit": u"ACADGen-003",
+    u"PH - large_iron_gate": (u"Paint-056", {"wallpaint_color": (32, 32, 34)}),
+    u"PH - bronze_whale_statue": u"Metal-014",       # Metal schema, bronze
+    u"PH - marble_bust_01": u"ACADGen-084",
 }
 
 PREFIX = u"BIM - "

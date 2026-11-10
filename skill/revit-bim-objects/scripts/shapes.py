@@ -134,6 +134,10 @@ class Builder(object):
         around the vertical axis at (x, y). Vases, lamp shades, round bases, bowls."""
         return self._emit([self._lathe_solid(mat, x, y, profile)])
 
+    def lathes(self, mat, pieces):
+        """Many turned shapes as one element: `pieces` is a list of (x, y, profile)."""
+        return self._emit([self._lathe_solid(mat, x, y, profile) for x, y, profile in pieces])
+
     def cylinder(self, mat, x, y, radius, z1, z2):
         return self.lathe(mat, x, y, [(0.0, z1), (radius, z1), (radius, z2), (0.0, z2)])
 
