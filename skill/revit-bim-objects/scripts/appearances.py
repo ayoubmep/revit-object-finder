@@ -45,6 +45,11 @@ VILLA = {
     u"Demo - Parquet": u"ACADGen-397",           # Finish Carpentry.Wood.White Oak
     u"Demo - Tissu clair": u"ACADGen-190",       # Fabrics.Linen.White
     u"Demo - Marbre": u"ACADGen-084",            # Flooring.Marble.White
+    u"Demo - Tissu sofa": u"ACADGen-188",        # Fabrics.Linen.Beige
+    u"Demo - Tapis": u"ACADGen-189",             # Fabrics.Linen.Tweed
+    u"Demo - Laiton": u"Metal-013",              # Metal schema, brass
+    u"Demo - Cannelures": (u"Paint-056", {"wallpaint_color": (206, 199, 189)}),
+    u"Demo - Velours brun": (u"Paint-056", {"wallpaint_color": (122, 82, 56)}),
     # a paint asset recoloured to near black, for frames and the pergola
     u"Demo - Metal sombre": (u"Paint-056", {"wallpaint_color": (38, 38, 40)}),
     # a self-illuminated generic asset: arrives in D5 as an emissive material
@@ -67,6 +72,11 @@ VILLA_OBJECTS = {
     u"PH - potted_plant_02_leaves": u"Generic-023",          # hedge
     u"PH - potted_plant_04": u"Generic-023",
     u"PH - potted_plant_02_pot": (u"Paint-056", {"wallpaint_color": (168, 96, 62)}),
+    u"PH - ceramic_vase_01": (u"Paint-056", {"wallpaint_color": (238, 236, 230)}),
+    u"PH - ceramic_vase_04": (u"Paint-056", {"wallpaint_color": (238, 236, 230)}),
+    u"PH - brass_vase_03": u"Metal-013",                     # Metal schema, brass
+    u"PH - brass_vase_04": u"Metal-013",
+    u"PH - wooden_candlestick": u"ACADGen-395",
     u"PH - modern_ceiling_lamp_01": (u"Paint-056", {"wallpaint_color": (236, 236, 232)}),
     u"PH - modern_ceiling_globe": (u"Generic-022", {"generic_diffuse": (255, 240, 215),
                                                     "generic_self_illum_luminance": 2500.0,
