@@ -329,15 +329,20 @@ def _build_type(doc, asset_id, folder, category, max_triangles):
     if existing is not None:
         return existing, None
     parts, count = _thin(read_parts(asset_id, folder), max_triangles)
-    builder = DB.TessellatedShapeBuilder()
-    builder.OpenConnectedFaceSet(False)
     used = 0
     lo = [1e9, 1e9, 1e9]
     hi = [-1e9, -1e9, -1e9]
     materials = []
+    geometry = List[DB.GeometryObject]()
     for part in parts:
+        if not part["triangles"]:
+            continue
         mat = _material(doc, PREFIX + part["material"], part["texture"])
         materials.append(mat.Name)
+        # one builder per part: a built mesh carries a single material, so parts built
+        # together all take the first part's material (leaves came out pot-coloured)
+        builder = DB.TessellatedShapeBuilder()
+        builder.OpenConnectedFaceSet(False)
         pts = [DB.XYZ(p[0] * M, p[1] * M, p[2] * M) for p in part["points"]]
         for p in part["points"]:
             for i in range(3):
@@ -352,11 +357,12 @@ def _build_type(doc, asset_id, folder, category, max_triangles):
             if builder.DoesFaceHaveEnoughLoopsAndVertices(face):
                 builder.AddFace(face)
                 used += 1
-    builder.CloseConnectedFaceSet()
-    builder.Target = DB.TessellatedShapeBuilderTarget.Mesh
-    builder.Fallback = DB.TessellatedShapeBuilderFallback.Salvage
-    builder.Build()
-    geometry = builder.GetBuildResult().GetGeometricalObjects()
+        builder.CloseConnectedFaceSet()
+        builder.Target = DB.TessellatedShapeBuilderTarget.Mesh
+        builder.Fallback = DB.TessellatedShapeBuilderFallback.Salvage
+        builder.Build()
+        for built in builder.GetBuildResult().GetGeometricalObjects():
+            geometry.Add(built)
     cat_id = DB.ElementId(category)
     if not DB.DirectShape.IsValidCategoryId(cat_id, doc):
         cat_id = DB.ElementId(DB.BuiltInCategory.OST_GenericModel)
@@ -413,6 +419,29 @@ def add(doc, items, folder=DEFAULT_FOLDER, max_triangles=MAX_TRIANGLES):
             t.RollBack()
         raise
     return {"downloads": downloads, "built": built, "placed": report}
+
+
+def purge(doc):
+    """Deletes every Poly Haven instance and the built objects behind them, so the
+    next `add` rebuilds them from the downloaded files. Materials stay."""
+    removed = clear(doc)
+    ids = []
+    for t in DB.FilteredElementCollector(doc).OfClass(DB.DirectShapeType):
+        p = t.get_Parameter(DB.BuiltInParameter.SYMBOL_NAME_PARAM)
+        if p is not None and (p.AsString() or u"").startswith(PREFIX):
+            ids.append(t.Id)
+    if ids:
+        tr = DB.Transaction(doc, "Purge Poly Haven objects")
+        tr.Start()
+        try:
+            for i in ids:
+                doc.Delete(i)
+            tr.Commit()
+        except Exception:
+            if tr.HasStarted() and not tr.HasEnded():
+                tr.RollBack()
+            raise
+    return {"instances": removed, "objects": len(ids)}
 
 
 def clear(doc):

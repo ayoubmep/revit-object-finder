@@ -45,11 +45,15 @@ VILLA = {
     u"Demo - Parquet": u"ACADGen-397",           # Finish Carpentry.Wood.White Oak
     u"Demo - Tissu clair": u"ACADGen-190",       # Fabrics.Linen.White
     u"Demo - Marbre": u"ACADGen-084",            # Flooring.Marble.White
-    u"Demo - Tissu sofa": u"ACADGen-188",        # Fabrics.Linen.Beige
-    u"Demo - Tapis": u"ACADGen-189",             # Fabrics.Linen.Tweed
+    u"Demo - Tapis": u"ACADGen-188",             # Fabrics.Linen.Beige (the tweed renders near black)
     u"Demo - Laiton": u"Metal-013",              # Metal schema, brass
     u"Demo - Cannelures": (u"Paint-056", {"wallpaint_color": (206, 199, 189)}),
-    u"Demo - Velours brun": (u"Paint-056", {"wallpaint_color": (122, 82, 56)}),
+    # upholstery in flat colours: the linen textures render almost white
+    u"Demo - Tissu sofa": (u"Paint-056", {"wallpaint_color": (190, 181, 170)}),
+    u"Demo - Velours brun": (u"Paint-056", {"wallpaint_color": (150, 100, 68)}),
+    u"Demo - Rideau": (u"Paint-056", {"wallpaint_color": (212, 203, 190)}),
+    # a picture: any image, sized to the canvas (1.1 x 1.55 m). A seamless image needs no alignment.
+    u"Demo - Art": (u"ACADGen-190", {"texture": (u"C:\\BIM-Library\\textures\\abstract_lines.png", 1.1, 1.55)}),
     # a paint asset recoloured to near black, for frames and the pergola
     u"Demo - Metal sombre": (u"Paint-056", {"wallpaint_color": (38, 38, 40)}),
     # a self-illuminated generic asset: arrives in D5 as an emissive material
@@ -105,6 +109,22 @@ def _tune(doc, element, tweaks):
         asset = scope.Start(element.Id)
         for key in sorted(tweaks):
             value = tweaks[key]
+            if key == "texture":
+                # (image path, width in metres, height in metres): swap the colour image
+                try:
+                    colour = asset.FindByName("generic_diffuse")
+                    image = colour.GetSingleConnectedAsset()
+                    if image is None:
+                        colour.AddConnectedAsset("UnifiedBitmap")
+                        image = colour.GetSingleConnectedAsset()
+                    image.FindByName(DB.Visual.UnifiedBitmap.UnifiedbitmapBitmap).Value = value[0]
+                    for name, size in ((DB.Visual.UnifiedBitmap.TextureRealWorldScaleX, value[1]),
+                                       (DB.Visual.UnifiedBitmap.TextureRealWorldScaleY, value[2])):
+                        distance = image.FindByName(name)
+                        distance.Value = DB.UnitUtils.Convert(size, DB.UnitTypeId.Meters, distance.GetUnitTypeId())
+                except Exception:
+                    problems.append(key)
+                continue
             prop = asset.FindByName(key)
             if prop is None:
                 problems.append(key)
@@ -163,6 +183,13 @@ def apply(doc, mapping):
             material = materials[mat_name]
             material.AppearanceAssetId = element.Id
             material.UseRenderAppearanceForShading = True
+            # a recoloured asset: show the same colour in Revit's shaded views, which
+            # otherwise fall back to black for some of them
+            for key in ("wallpaint_color", "generic_diffuse"):
+                if tweaks and isinstance(tweaks.get(key), tuple):
+                    rgb = tweaks[key]
+                    material.UseRenderAppearanceForShading = False
+                    material.Color = DB.Color(rgb[0], rgb[1], rgb[2])
             done.append(mat_name)
         t.Commit()
     except Exception:

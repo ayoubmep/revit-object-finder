@@ -48,6 +48,41 @@ When the reference is a whole room, not one object:
 - **Expect gaps on the hero pieces.** The free catalogue is mostly vintage; a designer sofa, chandelier or floor lamp usually has no match. Say so, and tell the user what to look for as a Revit family (type, shape, width) so they can download it into the library folder.
 - Give the user one table: object, best match, verdict, what you will do.
 
+## When a piece has to be modelled
+
+If nothing matches, model the piece, but never from bare boxes. Boxes read as toy blocks in a render however good the materials are; the final render adds light, not shape. `scripts/shapes.py` gives the forms that make a piece look made:
+
+```python
+import shapes
+b = shapes.Builder(doc, floor_z=0.0, comment=u"room:living")
+b.soft(fabric, 2.4, 3.2, 5.2, 4.2, 0.05, 0.36, radius=0.22, bevel=0.03)        # sofa base
+b.soft(velvet, 2.5, 3.8, 3.1, 3.95, 0.51, 0.86, radius=0.06, bevel=0.05,
+       tilt=("x", -14, (0, 3.95, 0.51)))                                        # cushion leaning back
+b.slab(marble, 3.2, 1.55, 4.4, 2.75, 0.39, 0.43, radius=0.12)                   # table top
+b.lathe(marble, 8.0, 3.9, [(0, 0.03), (0.12, 0.03), (0.07, 0.2), (0, 0.26)])    # turned lamp base
+b.flutes(panel, 1.6, 6.0, 4.33, 0.0, 2.4, pitch=0.07, radius=0.03)              # ribbed wall
+```
+
+Look at the reference and go through this list for every piece:
+
+| In the photo | Use |
+|---|---|
+| Upholstery: sofa bodies, arms, seat pads | `soft` with a large `radius` (0.1 to 0.25 m) and a `bevel`; one block per cushion, never one block for the whole sofa |
+| Loose cushions | `soft` with `tilt`, leaning 10 to 15 degrees against the back |
+| Table tops, rugs, consoles, screens | `slab` with a corner radius |
+| Lamp bases, shades, vases, plinths, anything round | `lathe`, `cylinder` or `dome` |
+| Ribbed or fluted panels | `flutes` (half-round ribs), not flat slats |
+| Curtains | `pleats` |
+| Metal frames, inlay lines, chandelier pieces | `plates`: thin bars at any angle, many of them in one element |
+| A picture or patterned panel | a flat box whose material carries an image (see `appearances.py`, the `texture` setting) |
+
+Then compare a capture with the reference and correct proportions before adding anything else: seat height near 0.4 m, sofa back near 0.75 m, coffee table near 0.4 m, legs thin (10 to 15 mm for metal). A piece that is right in proportion and soft at its edges reads as furniture; a detailed piece with wrong proportions does not.
+
+Two traps:
+
+- **Revit's shaded view is not the render.** A recoloured material can show black in Revit and correct in the renderer. Check the material's appearance, or the renderer, before "fixing" a colour.
+- **Wide shots need a wide camera.** Revit's default perspective shows about half of what a phone photo of a room shows.
+
 ## Route 1: fetch one object at a time (Poly Haven)
 
 Poly Haven publishes CC0 models and a public API meant for tools. Only the objects you place are downloaded, a few hundred KB each, into `C:\BIM-Library\polyhaven`.

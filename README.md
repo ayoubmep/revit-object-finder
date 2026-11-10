@@ -13,6 +13,7 @@ No library has to be downloaded first. This project is not affiliated with Autod
 1. **Revit families first.** Claude searches the families already in your project and the `.rfa` files in your library folder (for example `C:\BIM-Library`). Families are real BIM objects, with types and data.
 2. **Then free 3D objects.** If no family fits, Claude searches [Poly Haven](https://polyhaven.com), a public-domain (CC0) catalogue with a public API. It tiles the preview pictures, compares them with your reference by eye, checks the size, and tells you how close the match is: close, approximate (with the difference named), or none.
 3. **One object at a time.** Only what is placed is downloaded, a few hundred KB to 2 MB each, into `C:\BIM-Library\polyhaven`.
+4. **If nothing fits, it is modelled, and not from boxes.** A shapes module gives rounded corners, softened upholstery edges, turned forms for lamps and vases, leaning cushions, half-round ribs and pleats, so a modelled sofa reads as a sofa and not as stacked blocks.
 
 ## What you get, and what you do not
 
@@ -58,7 +59,8 @@ The skill never downloads Revit families for you. Put files you are allowed to u
 | `SKILL.md` | The instructions Claude follows, including how to match a reference. |
 | `scripts/polyhaven.py` | Search the catalogue, tile previews, fetch one object, build it in Revit, place it. |
 | `scripts/bim_library.py` | Search, load and place Revit families from the project and a folder; report each placed object's real size. |
-| `scripts/appearances.py` | Give materials a render appearance from the Autodesk library. |
+| `scripts/shapes.py` | Model a missing piece with rounded, soft, turned and tilted forms instead of boxes. |
+| `scripts/appearances.py` | Give materials a render appearance from the Autodesk library, recolour one, or put an image on a surface. |
 
 ## Credit
 
@@ -71,3 +73,4 @@ Tested on one PC: Revit 2026, pyRevit 7.
 - Poly Haven route: nine different objects, eighteen placements, 8.6 MB downloaded, then corrected for rotation and height.
 - Reference lookup: run on a single-object description and on a photo of a furnished living room (ten objects searched, 50 previews compared).
 - Family-folder route: indexed, loaded and placed a manufacturer family from BIMobject in a dry run; it came in at its stated size.
+- Modelling from a photo: a living room rebuilt from a reference picture with the shapes module (sofas, cushions, ribbed wall, marble and brass table, leaf chandelier, turned floor lamp).
